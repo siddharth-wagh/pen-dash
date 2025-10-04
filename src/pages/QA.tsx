@@ -1,29 +1,22 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
 import { Send, MessageSquare } from 'lucide-react';
-import { qaApi, QuestionResponse } from '@/api/qa';
+import { mockQA } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 
+interface QAItem {
+  question: string;
+  answer: string;
+}
+
 export default function QA() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [question, setQuestion] = useState('');
-  const [conversation, setConversation] = useState<QuestionResponse[]>([]);
-
-  const askMutation = useMutation({
-    mutationFn: (q: string) => qaApi.askQuestion(Number(projectId), { question: q }),
-    onSuccess: (response) => {
-      setConversation([...conversation, response.data]);
-      setQuestion('');
-    },
-    onError: () => {
-      toast.error('Failed to get answer');
-    },
-  });
+  const [conversation, setConversation] = useState<QAItem[]>(mockQA);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +24,15 @@ export default function QA() {
       toast.error('Please enter a question');
       return;
     }
-    askMutation.mutate(question);
+
+    const newQA: QAItem = {
+      question: question,
+      answer: 'This is a demo response. In a real application, this would be an AI-generated answer based on your story content.',
+    };
+
+    setConversation([...conversation, newQA]);
+    setQuestion('');
+    toast.success('Answer generated!');
   };
 
   return (
@@ -118,9 +119,9 @@ export default function QA() {
                   <p className="text-xs text-muted-foreground">
                     Press Enter to send, Shift+Enter for new line
                   </p>
-                  <Button type="submit" disabled={askMutation.isPending || !question.trim()}>
+                  <Button type="submit" disabled={!question.trim()}>
                     <Send className="h-4 w-4 mr-2" />
-                    {askMutation.isPending ? 'Thinking...' : 'Ask'}
+                    Ask
                   </Button>
                 </div>
               </div>

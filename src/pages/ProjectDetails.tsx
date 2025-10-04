@@ -1,9 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, FileText, Users, MapPin, Zap, MessageSquare } from 'lucide-react';
-import { projectsApi } from '@/api/projects';
-import { scriptsApi, CreateScriptData } from '@/api/scripts';
+import { mockProjects, mockScripts, Script } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -17,50 +15,22 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader } from '@/components/Loader';
 import { toast } from 'sonner';
 
 export default function ProjectDetails() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newScript, setNewScript] = useState<CreateScriptData>({
-    title: '',
-    content: '',
-  });
+  const [newScript, setNewScript] = useState({ title: '', content: '' });
+  const [scripts, setScripts] = useState<Script[]>([]);
 
-  const { data: project, isLoading: projectLoading } = useQuery({
-    queryKey: ['project', projectId],
-    queryFn: async () => {
-      const response = await projectsApi.getById(Number(projectId));
-      return response.data;
-    },
-    enabled: !!projectId,
-  });
+  const project = mockProjects.find(p => p.id === projectId);
 
-  const { data: scripts, isLoading: scriptsLoading } = useQuery({
-    queryKey: ['scripts', projectId],
-    queryFn: async () => {
-      const response = await scriptsApi.getByProject(Number(projectId));
-      return response.data;
-    },
-    enabled: !!projectId,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data: CreateScriptData) => 
-      scriptsApi.create(Number(projectId), data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scripts', projectId] });
-      toast.success('Script created successfully!');
-      setIsDialogOpen(false);
-      setNewScript({ title: '', content: '' });
-    },
-    onError: () => {
-      toast.error('Failed to create script');
-    },
-  });
+  useEffect(() => {
+    if (projectId) {
+      setScripts(mockScripts.filter(s => s.project_id === projectId));
+    }
+  }, [projectId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,16 +38,21 @@ export default function ProjectDetails() {
       toast.error('Please enter a script title');
       return;
     }
-    createMutation.mutate(newScript);
-  };
 
-  if (projectLoading || scriptsLoading) {
-    return (
-      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
-        <Loader text="Loading project..." />
-      </div>
-    );
-  }
+    const script: Script = {
+      id: String(mockScripts.length + scripts.length + 1),
+      project_id: projectId!,
+      title: newScript.title,
+      content: newScript.content,
+      created_at: new Date().toISOString(),
+    };
+
+    setScripts([...scripts, script]);
+    mockScripts.push(script);
+    toast.success('Script created successfully!');
+    setIsDialogOpen(false);
+    setNewScript({ title: '', content: '' });
+  };
 
   if (!project) {
     return (
@@ -180,8 +155,8 @@ export default function ProjectDetails() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Creating...' : 'Create Script'}
+                <Button type="submit">
+                  Create Script
                 </Button>
               </DialogFooter>
             </form>

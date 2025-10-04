@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { projectsApi, CreateProjectData } from '@/api/projects';
+import { mockProjects, Project } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -17,37 +16,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader } from '@/components/Loader';
 import { toast } from 'sonner';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newProject, setNewProject] = useState<CreateProjectData>({
+  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const [newProject, setNewProject] = useState({
     title: '',
     description: '',
-  });
-
-  const { data: projects, isLoading } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const response = await projectsApi.getAll();
-      return response.data;
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data: CreateProjectData) => projectsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success('Project created successfully!');
-      setIsDialogOpen(false);
-      setNewProject({ title: '', description: '' });
-    },
-    onError: () => {
-      toast.error('Failed to create project');
-    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -56,16 +33,19 @@ export default function Dashboard() {
       toast.error('Please enter a project title');
       return;
     }
-    createMutation.mutate(newProject);
+    
+    const project: Project = {
+      id: String(projects.length + 1),
+      title: newProject.title,
+      description: newProject.description,
+      created_at: new Date().toISOString(),
+    };
+    
+    setProjects([...projects, project]);
+    toast.success('Project created successfully!');
+    setIsDialogOpen(false);
+    setNewProject({ title: '', description: '' });
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
-        <Loader text="Loading projects..." />
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -123,8 +103,8 @@ export default function Dashboard() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Creating...' : 'Create Project'}
+                <Button type="submit">
+                  Create Project
                 </Button>
               </DialogFooter>
             </form>
