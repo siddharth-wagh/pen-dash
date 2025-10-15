@@ -1,0 +1,9 @@
+fastapi[all]
+motor
+pydantic[email]
+python-dotenv
+pinecone-client
+langchain
+langchain-google-genai
+langchain-community
+langchain-pinecone
