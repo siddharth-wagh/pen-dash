@@ -12,7 +12,7 @@ export const Navbar = () => {
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <BookOpen className="h-6 w-6 text-primary" />
-            <span className="text-xl font-semibold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            <span className="text-xl font-semibold bg-gradient-to-r from-primary to-primary-glow bg-clip-text ">
               Scribe's Eye
             </span>
           </Link>
